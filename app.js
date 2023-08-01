@@ -1,9 +1,14 @@
 const express = require("express");
 const app = express();
+app.use(express.json()); // for parsing application/json
+app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 const path = require("path");
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+const methodOverride = require("method-override");
+app.use(methodOverride("_method"));
 
 const mongoose = require("mongoose");
 mongoose.connect("mongodb://127.0.0.1:27017/Yelp");
@@ -19,10 +24,51 @@ app.get("/", (req, res) => {
   res.render("home");
 });
 
-app.get("/makecampground", async (req, res) => {
-  const camp = new Campground({ title: "Garden" });
-  await camp.save();
-  res.send(camp);
+app.get("/campgrounds", async (req, res) => {
+  const campgrounds = await Campground.find();
+  res.render("campgrounds/index", { campgrounds });
+});
+
+app.post("/campgrounds", async (req, res) => {
+  let { campground } = req.body;
+  let c = new Campground({
+    title: campground.title,
+    location: campground.location,
+  });
+  await c.save();
+  res.redirect("/campgrounds");
+});
+
+app.get("/campgrounds/new", async (req, res) => {
+  res.render("campgrounds/new");
+});
+
+app.get("/campgrounds/:id", async (req, res) => {
+  let id = req.params.id;
+  const campground = await Campground.findById(id);
+  res.render("campgrounds/show", { campground });
+});
+
+app.put("/campgrounds/:id", async (req, res) => {
+  let { campground } = req.body;
+  let id = req.params.id;
+  await Campground.findByIdAndUpdate(id, {
+    title: campground.title,
+    location: campground.location,
+  });
+  res.redirect(`/campgrounds/${id}`);
+});
+
+app.delete("/campgrounds/:id", async (req, res) => {
+  let id = req.params.id;
+  await Campground.findByIdAndDelete(id);
+  res.redirect("/campgrounds");
+});
+
+app.get("/campgrounds/:id/edit", async (req, res) => {
+  let id = req.params.id;
+  const campground = await Campground.findById(id);
+  res.render("campgrounds/edit", { campground });
 });
 
 app.listen("3000", () => {

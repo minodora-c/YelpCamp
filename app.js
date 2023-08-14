@@ -1,9 +1,12 @@
 const express = require("express");
 const app = express();
+// app.use() means that the code inside use() will run for any incoming request
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
+const ejsMate = require("ejs-mate");
 const path = require("path");
+app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -55,6 +58,9 @@ app.put("/campgrounds/:id", async (req, res) => {
   await Campground.findByIdAndUpdate(id, {
     title: campground.title,
     location: campground.location,
+    image: campground.image,
+    price: campground.price,
+    description: campground.description,
   });
   res.redirect(`/campgrounds/${id}`);
 });

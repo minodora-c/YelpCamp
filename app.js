@@ -24,6 +24,18 @@ db.once("open", () => {
 const Campground = require("./models/campground");
 const catchAsync = require("./utils/catchAsync");
 const ExpressError = require("./utils/ExpressError");
+const { campgroundSchema } = require("./utils/schemas");
+
+function validateCampground(req, res, next) {
+  let { campground } = req.body;
+  const result = campgroundSchema.validate(campground);
+  if (result.error) {
+    const msg = result.error.details.map((el) => el.message).join(",");
+    throw new ExpressError(msg, 400);
+  } else {
+    next();
+  }
+}
 
 // remember that the order of the paths is important, as the first one that matches the request will be executed
 
@@ -39,17 +51,17 @@ app.get(
   })
 );
 
+// validateCampground is a middleware called before catchAsync()
 app.post(
   "/campgrounds",
+  validateCampground,
   catchAsync(async (req, res) => {
     // you can throw an error and it will be caught by catchAsync and handled in app.use(...)
     if (!req.body.campground)
       throw new ExpressError("Invalid Campground Data", 400);
+
     let { campground } = req.body;
-    let c = new Campground({
-      title: campground.title,
-      location: campground.location,
-    });
+    let c = new Campground(campground);
     await c.save();
     res.redirect("/campgrounds");
   })
